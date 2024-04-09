@@ -47,16 +47,18 @@ int main()
     CountPoints(points);
     auto end{ std::chrono::high_resolution_clock::now() };
     std::chrono::duration<double, std::milli> diff{ end - start };
-    std::cout << "Time Run: " << diff.count() << "ms\n";
+    std::cout << "Time Run Without Threading: " << diff.count() << "ms\n";
+    std::cout << "In / Total: " << 4.f * in / total << "\n";
 
+    in = 0;
+    total = 0;
 
     // WITH THREADING //
-    start = std::chrono::high_resolution_clock::now();
-
     const unsigned int nrThreads{ std::thread::hardware_concurrency() };
     std::vector<std::jthread> threads{ nrThreads };
     const int points_per_thread = points / nrThreads;
 
+    start = std::chrono::high_resolution_clock::now();
     for (auto& thread : threads)
     {
         thread = std::jthread(CountPoints, points_per_thread);
@@ -66,11 +68,10 @@ int main()
     {
         thread.join();
     }
-
     end = std::chrono::high_resolution_clock::now();
-    diff = end - start;
-    std::cout << "Time Run With Threads: " << diff.count() << "ms\n";
 
+    diff = end - start;
+    std::cout << "Time Run With Threading: " << diff.count() << "ms\n";
     std::cout << "In / Total: " << 4.f * in / total << "\n";
     return 0;
 }
