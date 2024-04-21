@@ -2,6 +2,7 @@
 #include <thread>
 #include <mutex> //mutual exclusion
 #include <vector>
+#include <chrono>
 
 class Wallet final
 {
@@ -27,12 +28,7 @@ public:
 
     void moveMoney(int euros, Wallet& to)
     {
-        // lock both first to prevent deadlock
-        std::lock(m_myMutex, to.m_myMutex);
-
-        // give lock ownership to lock_guard to unlock when out of scope
-        std::lock_guard<std::mutex> self_lock(m_myMutex, std::adopt_lock);
-        std::lock_guard<std::mutex> to_lock(to.m_myMutex, std::adopt_lock);
+        std::scoped_lock lock(m_myMutex, to.m_myMutex);
 
         for (int i{}; i < euros; ++i)
         {
@@ -63,8 +59,8 @@ private:
 int testMultiThreadedWallet()
 {
     constexpr int times{ 5 };
-    Wallet walletA;
-    Wallet walletB;
+    Wallet walletA{};
+    Wallet walletB{};
     std::vector<std::jthread> threads;
 
     // Add money
@@ -102,6 +98,9 @@ int main()
 {
     constexpr int sampleSize{ 1000 };
 
+
+    auto start{ std::chrono::high_resolution_clock::now() };
+
     for (int i{}; i < sampleSize; ++i)
     {
         if (int value{ testMultiThreadedWallet() }; value != 5000)
@@ -114,7 +113,10 @@ int main()
         }
     }
 
-    std::cout << "Programm finished!\n";
+    auto end{ std::chrono::high_resolution_clock::now() };
+    std::chrono::duration<double> diff{ end - start };
+
+    std::cout << "Programm finished in " << diff.count() << " Sec.\n";
 
     return 0;
 }

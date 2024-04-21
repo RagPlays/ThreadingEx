@@ -16,16 +16,16 @@ struct vector2f
 
 vector2f GetRandomPoint()
 {
-    static std::random_device rd{};
-    static std::default_random_engine eng{ rd() };
-    static std::uniform_real_distribution<float> distr{ -1, 1 };
+    thread_local std::random_device rd{};
+    thread_local std::default_random_engine eng{ rd() };
+    thread_local std::uniform_real_distribution<float> distr{ -1, 1 };
     return { distr(eng), distr(eng) };
 }
 
 void CountPoints(int number)
 {
     int localIn{};
-    for (int i{}; i < number; ++i)
+    for (int idx{}; idx < number; ++idx)
     {
         const vector2f point{ GetRandomPoint() };
         if (point.x * point.x + point.y * point.y < 1.f)
@@ -33,6 +33,7 @@ void CountPoints(int number)
             ++localIn;
         }
     }
+
     std::lock_guard<std::mutex> lock(mutex);
     in += localIn;
     total += number;
@@ -56,7 +57,7 @@ int main()
     // WITH THREADING //
     const unsigned int nrThreads{ std::thread::hardware_concurrency() };
     std::vector<std::jthread> threads{ nrThreads };
-    const int points_per_thread = points / nrThreads;
+    const int points_per_thread{ points / nrThreads };
 
     start = std::chrono::high_resolution_clock::now();
     for (auto& thread : threads)
