@@ -39,25 +39,35 @@ void CountPoints(int number)
     total += number;
 }
 
+void PrintTime(const std::string& version, int milisec, float result)
+{
+    std::cout << version << " version: " << milisec << " ms\n";
+    std::cout << "result: " << result << "\n\n";
+}
+
 int main()
 {
-    constexpr int points{ 10'000'000 };
+    // variables //
+    constexpr unsigned int samples{ 100'000'000 };
+    const unsigned int nrThreads{ 4 };
+    const unsigned int points_per_thread{ samples / nrThreads };
 
-    // WITHOUT THREADING //
-    auto start{ std::chrono::high_resolution_clock::now() };
-    CountPoints(points);
-    auto end{ std::chrono::high_resolution_clock::now() };
-    std::chrono::duration<double, std::milli> diff{ end - start };
-    std::cout << "Time Run Without Threading: " << diff.count() << "ms\n";
-    std::cout << "In / Total: " << 4.f * in / total << "\n";
+    std::chrono::high_resolution_clock::time_point start{};
+    std::chrono::high_resolution_clock::time_point end{};
+    std::chrono::duration<double, std::milli> diff{};
 
+    // Normal Version //
+    start = std::chrono::high_resolution_clock::now();
+    CountPoints(samples);
+    end = std::chrono::high_resolution_clock::now();
+    diff = end - start;
+
+    PrintTime("Original", static_cast<int>(diff.count()), 4.f * in / total);
     in = 0;
     total = 0;
 
-    // WITH THREADING //
-    const unsigned int nrThreads{ std::thread::hardware_concurrency() };
+    // Threaded Version //
     std::vector<std::jthread> threads{ nrThreads };
-    const int points_per_thread{ points / nrThreads };
 
     start = std::chrono::high_resolution_clock::now();
     for (auto& thread : threads)
@@ -72,7 +82,9 @@ int main()
     end = std::chrono::high_resolution_clock::now();
 
     diff = end - start;
-    std::cout << "Time Run With Threading: " << diff.count() << "ms\n";
-    std::cout << "In / Total: " << 4.f * in / total << "\n";
+    PrintTime("Threaded", static_cast<int>(diff.count()), 4.f * in / total);
+    in = 0;
+    total = 0;
+
     return 0;
 }
